@@ -1,0 +1,84 @@
+# Web Framework and Extensions
+Flask
+Flask-Limiter
+Flask-Caching
+Flask-SQLAlchemy
+Flask-Migrate
+Werkzeug
+gunicorn
+MarkupSafe
+Jinja2
+itsdangerous
+click
+redis
+lap
+flasgger==0.9.7.1
+numpy==1.23.5
+Flask-SSE
+Flask-Cors
+eventlet
+supervision
+# Database
+SQLAlchemy
+psycopg2-binary
+python-dotenv
+alembic
+SQLAlchemy-Utils
+connection-pool
+
+# Computer Vision and OCR
+rapidocr-onnxruntime
+onnxruntime
+
+# Data Processing and Export
+pandas
+xlsxwriter
+openpyxl
+
+# Monitoring and Metrics
+prometheus-client
+psutil
+requests
+python-dateutil
+statsd
+APScheduler
+datadog
+newrelic
+
+# Security
+python-jose
+passlib
+bcrypt
+PyJWT
+rate-limiter
+flask-socketio
+eventlet
+
+# Utilities
+schedule
+tenacity
+python-multipart
+python-json-logger
+pytz
+tqdm
+aiohttp
+backoff
+cachetools
+torch
+#easyocr
+# Testing (Required for production verification)
+pytest
+pytest-cov
+pytest-mock
+pytest-timeout
+freezegun
+pytest-asyncio
+pytest-aiohttp
+
+# Development Tools
+black
+flake8
+isort
+pre-commit
+mypy
+pylint

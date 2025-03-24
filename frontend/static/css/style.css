@@ -1,0 +1,374 @@
+/* Base styles */
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --light-gray: #f8f9fa;
+}
+
+/* Layout */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    flex: 1;
+}
+
+.footer {
+    margin-top: auto;
+}
+
+/* Table styles */
+.table-responsive {
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table th {
+    background-color: var(--light-gray);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Card styles */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+}
+
+.card-header {
+    background-color: var(--light-gray);
+    border-bottom: none;
+    padding: 1rem;
+}
+
+/* Filter form styles */
+.filter-form {
+    padding: 1rem;
+    background-color: var(--light-gray);
+    border-radius: 0.25rem;
+    margin-bottom: 1rem;
+}
+
+/* Pagination styles */
+.pagination {
+    margin-bottom: 0;
+    justify-content: center;
+}
+
+.page-link {
+    color: var(--primary-color);
+}
+
+.page-item.active .page-link {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Button styles */
+.btn-group-sm > .btn, .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Loading indicator */
+.loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 14px;
+    }
+    
+    .btn-group-sm > .btn {
+        padding: 0.2rem 0.4rem;
+    }
+    
+    .card-body {
+        padding: 0.75rem;
+    }
+    
+    .container {
+        padding: 0.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .table-responsive {
+        font-size: 12px;
+    }
+    
+    .btn-sm {
+        font-size: 0.75rem;
+    }
+    
+    .pagination {
+        font-size: 0.875rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .table th {
+        background-color: #fff !important;
+        color: #000 !important;
+    }
+    
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    .container {
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    body {
+        font-size: 12pt;
+    }
+    
+    a[href]:after {
+        content: " (" attr(href) ")";
+    }
+}
+
+/* Filter styles */
+.filter-label {
+    justify-content: center;
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+}
+
+/* Camera filter - horizontal layout */
+.input-group:has(select) {
+    width: 100%;
+    flex-direction: row;
+}
+
+.input-group:has(select) .filter-label {
+    min-width: 120px;
+    width: 120px;
+}
+
+.input-group:has(select) .form-select {
+    width: calc(100% - 120px) !important;
+}
+
+/* Date range filter - vertical layout */
+.input-group:has(.daterange-input) {
+    width: 100%;
+    flex-direction: column;
+}
+
+.input-group:has(.daterange-input) .filter-label {
+    width: 100% !important;
+    margin-bottom: 0.5rem;
+}
+
+.input-group:has(.daterange-input) .daterange-input {
+    width: 100% !important;
+    text-align: center;
+}
+
+/* Make both camera and date range filters consistent */
+.form-select {
+    width: 100% !important;
+}
+
+/* Date range picker styling */
+.daterangepicker {
+    font-family: inherit;
+    border: 1px solid rgba(0,0,0,.125);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.daterangepicker .ranges li.active {
+    background-color: #212529;
+}
+
+.daterangepicker td.active, 
+.daterangepicker td.active:hover {
+    background-color: #212529;
+}
+
+.daterangepicker .ranges li:hover {
+    background-color: #e9ecef;
+}
+
+.daterangepicker .ranges {
+    min-width: 140px;
+}
+
+.daterangepicker .drp-calendar {
+    max-width: none;
+}
+
+/* System metrics styling */
+.metric-item {
+    padding: 10px;
+    background-color: var(--light-gray);
+    border-radius: 4px;
+}
+
+.camera-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.camera-status-item {
+    padding: 8px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.camera-status-item.active {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.camera-status-item.inactive {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+/* Real-time update styles */
+@keyframes highlightFade {
+    0% { background-color: rgba(255, 251, 130, 0.8); }
+    50% { background-color: rgba(255, 251, 130, 0.4); }
+    100% { background-color: transparent; }
+}
+
+.highlight-new {
+    animation: highlightFade 2s ease-out;
+}
+
+/* Ensure table rows have smooth transitions */
+table tbody tr {
+    transition: background-color 0.3s ease-out;
+}
+
+/* Connection status styles */
+.connection-status {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 8px 16px;
+    border-radius: 4px;
+    color: white;
+    z-index: 1000;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.connection-status.connected {
+    background-color: var(--success-color);
+}
+
+.connection-status.disconnected {
+    background-color: var(--warning-color);
+}
+
+.connection-status.error {
+    background-color: var(--danger-color);
+}
+
+/* Animation for new records */
+@keyframes highlightNew {
+    0% { background-color: rgba(40, 167, 69, 0.3); }
+    100% { background-color: transparent; }
+}
+
+.highlight-new {
+    animation: highlightNew 2s ease-out;
+}
+
+/* Animation for updated records */
+@keyframes highlightUpdate {
+    0% { background-color: rgba(255, 193, 7, 0.3); }
+    100% { background-color: transparent; }
+}
+
+.highlight-update {
+    animation: highlightUpdate 2s ease-out;
+}
+
+/* Enhanced alert styles */
+.alert {
+    margin-bottom: 1rem;
+    border: none;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    animation: slideIn 0.3s ease-out;
+}
+
+.alert-success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.alert-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.alert .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Include original styles from style_back.css */
+{% include 'css/style_back.css' %}
+
+/* WebSocket-related styles */
+@keyframes highlightNew {
+    0% { background-color: rgba(40, 167, 69, 0.3); }
+    100% { background-color: transparent; }
+}
+
+.highlight-new {
+    animation: highlightNew 2s ease-out;
+}
+
+@keyframes highlightUpdate {
+    0% { background-color: rgba(255, 193, 7, 0.3); }
+    100% { background-color: transparent; }
+}
+
+.highlight-update {
+    animation: highlightUpdate 2s ease-out;
+} 

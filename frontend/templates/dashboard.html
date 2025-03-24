@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<!-- Add DateRangePicker CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+<style>
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+    }
+
+    /* Animation for new records */
+    @keyframes highlightNew {
+        0% { background-color: rgba(40, 167, 69, 0.3); }
+        100% { background-color: transparent; }
+    }
+
+    .highlight-new {
+        animation: highlightNew 2s ease-out;
+    }
+
+    /* Animation for updated records */
+    @keyframes highlightUpdate {
+        0% { background-color: rgba(255, 193, 7, 0.3); }
+        100% { background-color: transparent; }
+    }
+
+    .highlight-update {
+        animation: highlightUpdate 2s ease-out;
+    }
+
+    /* Pagination Styling */
+    .pagination {
+        margin-bottom: 0 !important;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #343a40 !important;
+        border-color: #343a40 !important;
+        color: #fff !important;
+    }
+
+    .pagination .page-link {
+        color: #6c757d !important;
+        background-color: #fff !important;
+        border: 1px solid #dee2e6 !important;
+        padding: 0.5rem 0.75rem !important;
+        margin: 0 2px !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+
+    .pagination .page-link:hover {
+        color: #343a40 !important;
+        background-color: #e9ecef !important;
+        border-color: #dee2e6 !important;
+        z-index: 2 !important;
+    }
+
+    .pagination .page-link:focus {
+        box-shadow: 0 0 0 0.2rem rgba(52, 58, 64, 0.25) !important;
+        z-index: 3 !important;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #adb5bd !important;
+        background-color: #fff !important;
+        border-color: #dee2e6 !important;
+        pointer-events: none !important;
+    }
+
+    /* Override Bootstrap's default focus outline */
+    .page-link:focus {
+        outline: none !important;
+    }
+
+    /* Ensure proper spacing between pagination items */
+    .pagination .page-item {
+        margin: 0 2px !important;
+    }
+
+    /* Style for the current/active page number */
+    .pagination .page-item.active {
+        z-index: 1 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner-border text-primary loading-spinner" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+
+<!-- Image Preview Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Image Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="previewImage" class="img-fluid" alt="Preview" onerror="handleImageError(this)">
+                <div id="imageError" class="alert alert-danger d-none">
+                    Failed to load image. The image may no longer be available.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Sidebar with Filters and System Status -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Filters</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" action="{{ url_for('index') }}" id="filterForm">
+                    <!-- Camera filter -->
+                    <div class="input-group mb-3">
+                        <label class="input-group-text filter-label" for="camera_id">Camera</label>
+                        <select class="form-select" id="camera_id" name="camera_id" onchange="this.form.submit()">
+                            <option value="" {% if not camera_id %}selected{% endif %}>All Cameras</option>
+                            <option value="CAM_1" {% if camera_id == 'CAM_1' %}selected{% endif %}>Camera 1</option>
+                            <option value="CAM_2" {% if camera_id == 'CAM_2' %}selected{% endif %}>Camera 2</option>
+                            <option value="CAM_3" {% if camera_id == 'CAM_3' %}selected{% endif %}>Camera 3</option>
+                            <option value="CAM_4" {% if camera_id == 'CAM_4' %}selected{% endif %}>Camera 4</option>
+                            <option value="CAM_5" {% if camera_id == 'CAM_5' %}selected{% endif %}>Camera 5</option>
+                        </select>
+                    </div>
+
+                    <!-- Date range -->
+                    <div class="d-flex align-items-center mb-3">
+                        <label class="form-check-label me-2" for="dateFiltering">Date Filtering</label>
+                        <input class="form-check-input" type="checkbox" id="dateFiltering" name="dateFiltering">
+                    </div>
+
+                    <div id="dateRangeContainer" style="display: none;">
+                        <div class="input-group mb-3">
+                            <label class="input-group-text filter-label" for="daterange">Date Range</label>
+                            <input type="text" class="form-control daterange-input" id="daterange" name="daterange" 
+                                   value="{% if start_date and end_date %}{{ start_date }} - {{ end_date }}{% else %}Select Date Range{% endif %}" readonly />
+                            <input type="hidden" id="start_date" name="start_date" value="{{ start_date }}">
+                            <input type="hidden" id="end_date" name="end_date" value="{{ end_date }}">
+                        </div>
+                    </div>
+                </form>
+
+                <!-- System Metrics Collapsible -->
+                <div class="accordion" id="systemMetrics">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="metricsHeader">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#metricsCollapse" aria-expanded="false" aria-controls="metricsCollapse">
+                                System Status
+                            </button>
+                        </h2>
+                        <div id="metricsCollapse" class="accordion-collapse collapse" aria-labelledby="metricsHeader">
+                            <div class="accordion-body">
+                                <div class="metric-item mb-3">
+                                    <h6>System Uptime</h6>
+                                    <p class="mb-0" id="system-uptime" data-start-time="{{ metrics.start_time }}" data-uptime-seconds="{{ metrics.uptime_seconds }}">{{ metrics.uptime }}</p>
+                                </div>
+                                <div class="metric-item mb-3">
+                                    <h6>CPU Usage</h6>
+                                    <p class="mb-0">{{ metrics.cpu_usage }}%</p>
+                                </div>
+                                <div class="metric-item mb-3">
+                                    <h6>Memory Usage</h6>
+                                    <p class="mb-0">{{ metrics.memory_usage }}%</p>
+                                </div>
+                                <div class="metric-item">
+                                    <h6>Camera Status</h6>
+                                    <div class="camera-status-grid">
+                                        {% for camera in metrics.camera_status %}
+                                        <div class="camera-status-item {{ 'active' if camera.status else 'inactive' }}">
+                                            {{ camera.id }}: {{ 'Online' if camera.status else 'Offline' }}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="col-md-9">
+        <!-- Results Table -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">OCR Results</h5>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-muted">Total Records: {{ pagination.total_records if pagination else 0 }}</span>
+                    {% if results %}
+                    <a href="{{ url_for('export_excel', start_date=start_date, end_date=end_date, camera_id=camera_id) }}" 
+                       class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-file-earmark-excel"></i> Export Excel
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                {% if results %}
+                <div class="table-responsive">
+                    <table class="table table-striped" id="records-table">
+                        <thead>
+                            <tr>
+                                <th>Date/Time</th>
+                                <th>Container Number</th>
+                                <th>Camera</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in results %}
+                            <tr data-track-id="{{ result.track_id }}">
+                                <td>{{ result.datetime.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td>{{ result.ocr_output }}</td>
+                                <td>{{ result.camera_id }}</td>
+                                <td class="text-center">
+                                    {% set is_available, status, full_path = get_image_status(result.image_path) %}
+                                    {% if is_available %}
+                                        {% set image_filename = result.image_path.split('/')[-1] if '/' in result.image_path else result.image_path %}
+                                        <a href="{{ url_for('serve_image', filename=image_filename) }}" class="btn btn-sm btn-outline-dark" target="_blank">
+                                            <i class="bi bi-image"></i> View
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted" title="{{ status }}">
+                                            <i class="bi bi-image-fill text-muted"></i> Unavailable
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    
+                    <!-- Pagination and Record Count -->
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="text-muted record-count">
+                            {% if pagination and pagination.total > 0 %}
+                            Showing {{ (pagination.page - 1) * pagination.per_page + 1 }} 
+                            to {{ min(pagination.page * pagination.per_page, pagination.total) }}
+                            of {{ pagination.total }} entries
+                            {% endif %}
+                        </div>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination mb-0" id="pagination">
+                                {% if pagination and pagination.total_pages > 1 %}
+                                <!-- First Page -->
+                                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('index', page=1, start_date=start_date, end_date=end_date, camera_id=camera_id, dateFiltering=date_filtering) }}" aria-label="First">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                
+                                <!-- Previous Page -->
+                                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('index', page=pagination.page-1, start_date=start_date, end_date=end_date, camera_id=camera_id, dateFiltering=date_filtering) }}" aria-label="Previous">
+                                        <span aria-hidden="true">&lsaquo;</span>
+                                    </a>
+                                </li>
+                                
+                                <!-- Page Numbers -->
+                                {% set start_page = [pagination.page - 2, 1]|max %}
+                                {% set end_page = [start_page + 4, pagination.total_pages]|min %}
+                                {% set start_page = [end_page - 4, 1]|max %}
+                                
+                                {% for page_num in range(start_page, end_page + 1) %}
+                                <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('index', page=page_num, start_date=start_date, end_date=end_date, camera_id=camera_id, dateFiltering=date_filtering) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                                {% endfor %}
+                                
+                                <!-- Next Page -->
+                                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('index', page=pagination.page+1, start_date=start_date, end_date=end_date, camera_id=camera_id, dateFiltering=date_filtering) }}" aria-label="Next">
+                                        <span aria-hidden="true">&rsaquo;</span>
+                                    </a>
+                                </li>
+                                
+                                <!-- Last Page -->
+                                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                                    <a class="page-link" href="{{ url_for('index', page=pagination.total_pages, start_date=start_date, end_date=end_date, camera_id=camera_id, dateFiltering=date_filtering) }}" aria-label="Last">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-center">No results found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Load jQuery first -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Then Moment.js -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<!-- Then DateRangePicker -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<!-- Then Socket.IO -->
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<!-- Finally, your custom JS -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<script>
+$(document).ready(function() {
+    console.log('Document ready, initializing components...');
+    
+    // Initialize date range picker
+    $('#daterange').daterangepicker({
+        autoUpdateInput: false,
+        startDate: moment().subtract(7, 'days'),
+        endDate: moment(),
+        ranges: {
+           'Today': [moment(), moment()],
+           'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+           'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+           'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+           'This Month': [moment().startOf('month'), moment().endOf('month')],
+           'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+        },
+        locale: {
+            format: 'YYYY-MM-DD',
+            cancelLabel: 'Clear'
+        }
+    });
+
+    // Handle date range picker selection
+    $('#daterange').on('apply.daterangepicker', function(ev, picker) {
+        $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+        $('#start_date').val(picker.startDate.format('YYYY-MM-DD'));
+        $('#end_date').val(picker.endDate.format('YYYY-MM-DD'));
+        $('#filterForm').submit();
+    });
+
+    $('#daterange').on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
+        $('#start_date').val('');
+        $('#end_date').val('');
+        $('#filterForm').submit();
+    });
+
+    // Show/Hide date range selector based on checkbox
+    $('#dateFiltering').change(function() {
+        if ($(this).is(':checked')) {
+            $('#dateRangeContainer').show();
+        } else {
+            $('#dateRangeContainer').hide();
+            $('#start_date').val('');
+            $('#end_date').val('');
+            this.form.submit();
+        }
+    });
+
+    // Show date range container if filtering is enabled
+    if ($('#dateFiltering').is(':checked')) {
+        $('#dateRangeContainer').show();
+    }
+
+    // Initialize system uptime counter
+    initializeUptimeCounter();
+    
+    // Initialize WebSocket connection
+    initializeWebSocket();
+});
+
+function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function handleImageError(img) {
+    img.style.display = 'none';
+    document.getElementById('imageError').classList.remove('d-none');
+}
+
+// Handle modal cleanup
+$('#imageModal').on('hidden.bs.modal', function () {
+    const img = document.getElementById('previewImage');
+    img.src = '';
+    img.style.display = 'block';
+    document.getElementById('imageError').classList.add('d-none');
+});
+</script>
+{% endblock %} 

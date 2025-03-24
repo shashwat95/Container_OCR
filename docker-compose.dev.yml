@@ -1,0 +1,154 @@
+version: '3.8'
+
+services:
+  web:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    ports:
+      - "8014:8014"
+      - "5678:5678"  # For remote debugging
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - DATABASE_URL=postgresql://admin:admin123@db:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
+      - EVIDENCE_STORAGE_PATH=/app/evidence_images
+      - LOG_PATH=/app/logs
+      - PYTHONBREAKPOINT=ipdb.set_trace
+    volumes:
+      - .:/app
+      - /app/venv
+      - /app/__pycache__
+    command: ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "-m", "flask", "run", "--host=0.0.0.0", "--port=8014", "--reload"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+
+  video_pipeline:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    command: ["python", "-m", "debugpy", "--listen", "0.0.0.0:5679", "video_pipeline.py"]
+    ports:
+      - "5679:5679"  # For remote debugging
+    environment:
+      - PYTHONPATH=/app
+      - CUDA_VISIBLE_DEVICES=0
+      - DATABASE_URL=postgresql://admin:admin123@db:5432/${POSTGRES_DB}
+      - EVIDENCE_STORAGE_PATH=/app/evidence_images
+      - LOG_PATH=/app/logs
+      - PYTHONBREAKPOINT=ipdb.set_trace
+    volumes:
+      - .:/app
+      - /app/venv
+      - /app/__pycache__
+      - ./debug_output:/app/debug_output
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+    depends_on:
+      db:
+        condition: service_healthy
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    networks:
+      - app-network
+
+  db:
+    image: postgres:14-alpine
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin123
+      - POSTGRES_DB=${POSTGRES_DB}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data_dev:/data
+    ports:
+      - "6379:6379"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:v2.44.0
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:9.5.2
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+
+volumes:
+  postgres_data_dev:
+  redis_data_dev:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  app-network:
+    driver: bridge 
